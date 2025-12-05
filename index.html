@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Egg Clicker</title>
+  <style>
+    :root{--bg:#111;--accent:#ffd54f;--muted:#aaa;--panel:#222;--glass:rgba(255,255,255,0.04)}
+    *{box-sizing:border-box;font-family:Inter,Segoe UI,system-ui,Arial;margin:0}
+    body{background:linear-gradient(180deg,#0b1020 0%, #081224 100%);min-height:100vh;color:#eee;display:flex;flex-direction:column;align-items:center;padding:16px}
+    .topbar{width:100%;max-width:1200px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .counter{background:var(--panel);padding:12px 18px;border-radius:12px;display:flex;gap:18px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,0.6)}
+    .counter .big{font-size:20px;font-weight:700}
+    .stat{font-size:13px;color:var(--muted)}
+
+    .layout{width:100%;max-width:1200px;display:grid;grid-template-columns:1fr 380px;gap:16px;margin-top:16px}
+
+    /* play area */
+    .farm{background:var(--glass);height:640px;border-radius:16px;padding:18px;position:relative;overflow:hidden}
+    .egg-area{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%}
+
+    /* big egg */
+    .egg{width:240px;height:300px;border-radius:50% 50% 48% 48%/55% 55% 45% 45%;background:linear-gradient(#fff6e0,#fff1c0);position:relative;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 40px rgba(0,0,0,0.6);cursor:pointer;transform-origin:center;transition:transform .12s}
+    .egg:active{transform:scale(.96)}
+    .egg::after{content:'';position:absolute;width:120%;height:60%;left:-10%;top:6%;background:radial-gradient(circle at 30% 20%, rgba(255,255,255,0.9), rgba(255,255,255,0.3) 30%, transparent 45%);opacity:.9;border-radius:50%}
+    .egg-wiggle{animation:floaty 4s ease-in-out infinite}
+    @keyframes floaty{0%{transform:translateY(0)}50%{transform:translateY(-10px) rotate(-2deg)}100%{transform:translateY(0)}}
+
+    /* egg particles */
+    .particle{position:absolute;width:24px;height:30px;border-radius:50% 50% 48% 48%/55% 55% 45% 45%;background:linear-gradient(#fff6e0,#fff1c0);pointer-events:none;opacity:1}
+
+    /* right panel - shop */
+    .panel{background:var(--panel);padding:12px;border-radius:12px;max-height:640px;overflow:auto}
+    .section-title{font-weight:700;margin-bottom:8px}
+    .grid{display:grid;grid-template-columns:1fr;gap:8px}
+    .item{background:rgba(255,255,255,0.03);padding:8px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .buy{background:linear-gradient(90deg,#ffd76a,#ffb84d);border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
+    .buy:disabled{opacity:.5;cursor:not-allowed}
+
+    /* chickens */
+    .chicken-list{display:flex;flex-wrap:wrap;gap:8px}
+    .chicken-card{background:rgba(255,255,255,0.02);padding:6px;border-radius:8px;display:flex;align-items:center;gap:8px;width:calc(50% - 8px)}
+    .rarity-common{border-left:4px solid #9e9e9e}
+    .rarity-rare{border-left:4px solid #42a5f5}
+    .rarity-epic{border-left:4px solid #ab47bc}
+    .rarity-legend{border-left:4px solid #ffd54f}
+
+    /* shop tabs */
+    .tabs{display:flex;gap:6px;margin-bottom:8px}
+    .tab{padding:6px 10px;border-radius:8px;background:rgba(255,255,255,0.02);cursor:pointer}
+    .tab.active{background:linear-gradient(90deg,#2b2b2b,#313131)}
+
+    /* small responsive */
+    @media (max-width:900px){.layout{grid-template-columns:1fr}.farm{height:540px}.egg{width:200px;height:250px}}
+
+    /* generated background animation container (many classes injected via JS) */
+    .bg-layer{position:absolute;inset:0;z-index:0;pointer-events:none}
+    .farm > .content{position:relative;z-index:2}
+    .ui-overlay{position:relative;z-index:3}
+
+    /* simple scrollbar */
+    .panel::-webkit-scrollbar{height:8px;width:8px}
+    .panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06);border-radius:8px}
+
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="counter">
+      <div>
+        <div class="big" id="eggCount">0</div>
+        <div class="stat">Eggs</div>
+      </div>
+      <div>
+        <div class="big" id="eps">0 EPS</div>
+        <div class="stat">Eggs per second</div>
+      </div>
+      <div>
+        <div class="big" id="epc">1 EPC</div>
+        <div class="stat">Eggs per click</div>
+      </div>
+      <div>
+        <div class="big" id="chickenCount">0</div>
+        <div class="stat">Chickens</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button id="saveBtn" class="tab">Save</button>
+      <button id="resetBtn" class="tab">Reset</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="farm" id="farm">
+      <div class="bg-layer" id="bgLayer"></div>
+      <div class="content">
+        <div class="egg-area ui-overlay">
+          <div id="egg" class="egg egg-wiggle" title="Click me to get eggs"></div>
+          <div style="margin-top:18px;text-align:center;color:var(--muted)">Click the egg! Tiny eggs will drop behind the screen.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="panel">
+        <div class="tabs">
+          <div class="tab active" data-tab="upgrades">Upgrades</div>
+          <div class="tab" data-tab="shop">Shop</div>
+          <div class="tab" data-tab="chickens">Chickens</div>
+          <div class="tab" data-tab="themes">Style Shop</div>
+        </div>
+        <div id="tabContent">
+          <!-- dynamic -->
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Owned Chickens</div>
+        <div id="ownedChickens" class="chicken-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Egg Clicker — Save is localStorage. Perfect for GitHub Pages. Generated assets are CSS & JS only.</footer>
+
+  <script>
+  // ------------------------------
+  // Egg Clicker - single file
+  // Features implemented:
+  // - Clickable animated egg
+  // - Particles (tiny eggs) float down and disappear
+  // - 60+ upgrades (generated)
+  // - 60+ shop decor/background items (generated)
+  // - 40 BG animations generated via CSS
+  // - 50+ BG themes (color gradients)
+  // - 10 chickens with rarities and special effects
+  // - Prices increase each buy (exponential)
+  // - Saves/loads from localStorage
+  // - Panels: eggs per second (EPS), eggs per click (EPC), chicken count
+  // ------------------------------
+
+  // helpers
+  const $ = (s) => document.querySelector(s)
+  const qs = (s) => document.querySelectorAll(s)
+
+  // game state
+  const STATE_KEY = 'egg_clicker_v1'
+  let state = {
+    eggs: 0,
+    epc: 1,
+    eps: 0,
+    upgrades: {},
+    shop: {},
+    chickens: {},
+    ownedChickens: {},
+    bgTheme: 0,
+    bgAnim: 0,
+    lastTick: Date.now()
+  }
+
+  // generate arrays
+  const NUM_UPGRADES = 60
+  const NUM_SHOP = 60
+  const NUM_BG_ANIMS = 40
+  const NUM_BG_THEMES = 50
+
+  // utility to generate a name
+  function genName(prefix, i){return prefix + ' ' + (i+1)}
+
+  // create upgrades: give either click boost or passive
+  const upgrades = Array.from({length:NUM_UPGRADES}).map((_,i)=>{
+    const type = (i % 3 === 0) ? 'click' : (i%3===1) ? 'passive' : 'multi'
+    const base = Math.round(5 * Math.pow(1.6,i%12) * (1 + Math.floor(i/12)))
+    const value = type==='click' ? Math.max(1,Math.round( Math.pow(1.4, i%12) ))
+                : type==='passive' ? Math.max(0.1, Math.round(10*Math.pow(1.25,i%10))/10)
+                : Math.max(1, Math.round( Math.pow(1.2, i%10) ))
+    return {
+      id: 'up'+i,
+      name: genName('Upgrade', i+1),
+      desc: type==='click' ? `Increase eggs per click by +${value}` : type==='passive' ? `Generate +${value} eggs/sec` : `Multiplier x${value}` ,
+      type,
+      basePrice: base,
+      value
+    }
+  })
+
+  // shop items: cosmetics and BG themes/animations
+  const shopItems = Array.from({length:NUM_SHOP}).map((_,i)=>{
+    return {
+      id:'shop'+i,
+      name: genName(i<NUM_BG_THEMES? 'Theme':'Decor', i+1),
+      price: Math.round(50 * Math.pow(1.2, i)),
+      effect: i < NUM_BG_THEMES ? {themeIndex: i} : {decorIndex: i}
+    }
+  })
+
+  // background themes - color gradients
+  const bgThemes = Array.from({length:NUM_BG_THEMES}).map((_,i)=>{
+    // make many pastel gradients programmatically
+    const h1 = Math.round((i*37)%360)
+    const h2 = Math.round((i*97+60)%360)
+    return {id:i, css:`linear-gradient(135deg,hsl(${h1} 60% 55%), hsl(${h2} 65% 50%))`}
+  })
+
+  // bg animations (we will create CSS rules dynamically)
+  const bgAnims = Array.from({length:NUM_BG_ANIMS}).map((_,i)=>({id:i,name:`Animation ${i+1}`}))
+
+  // chickens - 10 with rarities and special effects
+  const chickens = [
+    {id:'c1',name:'Clucky',emoji:'🐔',rarity:'common',effect:{epc:0.2}},
+    {id:'c2',name:'Feather',emoji:'🐣',rarity:'common',effect:{eps:0.2}},
+    {id:'c3',name:'Sunny',emoji:'🐥',rarity:'rare',effect:{epc:1}},
+    {id:'c4',name:'Bolt',emoji:'⚡️',rarity:'rare',effect:{eps:1}},
+    {id:'c5',name:'Aurora',emoji:'🪶',rarity:'epic',effect:{epc:3,eps:0.5}},
+    {id:'c6',name:'Goldcrest',emoji:'🥇',rarity:'legend',effect:{epc:10}},
+    {id:'c7',name:'Nimbus',emoji:'🌥️',rarity:'epic',effect:{eps:3}},
+    {id:'c8',name:'Echo',emoji:'🔔',rarity:'rare',effect:{clickBonus:2}},
+    {id:'c9',name:'Sable',emoji:'🖤',rarity:'common',effect:{epc:0.5}},
+    {id:'c10',name:'Comet',emoji:'☄️',rarity:'legend',effect:{eps:10,epc:5}}
+  ]
+
+  // initial state fill
+  upgrades.forEach(u=>state.upgrades[u.id]=0)
+  shopItems.forEach(s=>state.shop[s.id]=false)
+  chickens.forEach(c=>state.chickens[c.id]=0)
+
+  // load/save
+  function save(){
+    state.lastTick = Date.now()
+    localStorage.setItem(STATE_KEY, JSON.stringify(state))
+    flashSave()
+  }
+  function load(){
+    const raw = localStorage.getItem(STATE_KEY)
+    if(raw){
+      try{ const parsed = JSON.parse(raw); state=Object.assign(state,parsed); }
+      catch(e){console.warn('load failed',e)}
+    }
+  }
+  function reset(){ if(confirm('Reset all progress?')){ localStorage.removeItem(STATE_KEY); location.reload() } }
+
+  // UI rendering
+  const tabContent = $('#tabContent')
+  function renderTab(name='upgrades'){
+    if(name==='upgrades'){
+      tabContent.innerHTML = `<div class="section-title">Upgrades</div><div class="grid" id="upgradesGrid"></div>`
+      const grid = $('#upgradesGrid')
+      upgrades.forEach(u=>{
+        const owned = state.upgrades[u.id] || 0
+        const price = Math.round(u.basePrice * Math.pow(1.15, owned))
+        const el = document.createElement('div'); el.className='item'
+        el.innerHTML=`<div style="flex:1"><div style="font-weight:700">${u.name} ${owned?`(x${owned})`:''}</div><div style="font-size:12px;color:var(--muted)">${u.desc}</div></div><div style="text-align:right"><div style="font-weight:700">${price}</div><button class="buy" data-id="${u.id}" data-type="upgrade">Buy</button></div>`
+        grid.appendChild(el)
+      })
+    } else if(name==='shop'){
+      tabContent.innerHTML = `<div class="section-title">Shop - Decorations & Cosmetics</div><div class="grid" id="shopGrid"></div>`
+      const grid = $('#shopGrid')
+      shopItems.forEach(s=>{
+        const owned = state.shop[s.id]
+        const price = s.price
+        const el = document.createElement('div'); el.className='item'
+        el.innerHTML=`<div style="flex:1"><div style="font-weight:700">${s.name}</div><div style="font-size:12px;color:var(--muted)">${s.effect.themeIndex!==undefined? 'Background theme': 'Decor item'}</div></div><div style="text-align:right"><div style="font-weight:700">${price}</div><button class="buy" data-id="${s.id}" data-type="shop" ${owned? 'disabled':''}>${owned? 'Owned':'Buy'}</button></div>`
+        grid.appendChild(el)
+      })
+    } else if(name==='chickens'){
+      tabContent.innerHTML = `<div class="section-title">Chickens to collect</div><div class="grid" id="chickenGrid"></div>`
+      const grid = $('#chickenGrid')
+      chickens.forEach(c=>{
+        const owned = state.ownedChickens[c.id] || 0
+        const price = Math.round(200 * (c.rarity==='common'?1:c.rarity==='rare'?6:c.rarity==='epic'?30:150))
+        const el = document.createElement('div'); el.className='item chicken-card '+('rarity-'+(c.rarity==='legend'?'legend':c.rarity))
+        el.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><div style="font-size:22px">${c.emoji}</div><div><div style="font-weight:700">${c.name}</div><div style="font-size:12px;color:var(--muted)">Rarity: ${c.rarity}</div></div></div><div style="text-align:right"><div style="font-weight:700">${price}</div><button class="buy" data-id="${c.id}" data-type="chicken">${owned? 'Owned':'Buy'}</button></div>`
+        grid.appendChild(el)
+      })
+    } else if(name==='themes'){
+      tabContent.innerHTML = `<div class="section-title">Style Shop - Themes & Background Animations</div><div style="display:flex;gap:8px"><div style="flex:1"><div class="section-title" style="font-size:14px">Themes</div><div id="themesGrid" class="grid"></div></div><div style="width:220px"><div class="section-title" style="font-size:14px">Animations</div><div id="animGrid" class="grid"></div></div></div>`
+      const tgrid = $('#themesGrid'), agrid = $('#animGrid')
+      bgThemes.forEach(t=>{
+        const price = 50 + t.id*5
+        const owned = state.shop['shop'+t.id]
+        const el = document.createElement('div'); el.className='item'
+        el.innerHTML=`<div style="display:flex;gap:8px;align-items:center"><div style="width:40px;height:30px;border-radius:6px;background:${t.css}"></div><div style="flex:1"><div style="font-weight:700">Theme ${t.id+1}</div></div></div><div style="text-align:right"><div style="font-weight:700">${price}</div><button class="buy" data-id="shop${t.id}" data-type="shop" ${owned? 'disabled':''}>${owned? 'Owned':'Buy'}</button></div>`
+        tgrid.appendChild(el)
+      })
+
+      bgAnims.forEach(a=>{
+        const price = 100 + a.id*10
+        const owned = state.shop['shop'+(NUM_BG_THEMES + a.id)]
+        const el = document.createElement('div'); el.className='item'
+        el.innerHTML=`<div style="flex:1"><div style="font-weight:700">${a.name}</div><div style="font-size:12px;color:var(--muted)">Animated background</div></div><div style="text-align:right"><div style="font-weight:700">${price}</div><button class="buy" data-id="shop${NUM_BG_THEMES + a.id}" data-type="shop" ${owned? 'disabled':''}>${owned? 'Owned':'Buy'}</button></div>`
+        agrid.appendChild(el)
+      })
+    }
+  }
+
+  // handle tabs
+  qs('.tab').forEach(t=>t.addEventListener('click',()=>{qs('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); renderTab(t.dataset.tab)}))
+
+  // initial render
+  renderTab('upgrades')
+
+  // update top counters
+  function updateCounters(){
+    $('#eggCount').textContent = formatNumber(state.eggs)
+    $('#eps').textContent = formatNumber(state.eps) + ' EPS'
+    $('#epc').textContent = formatNumber(state.epc) + ' EPC'
+    const chickenNum = Object.values(state.ownedChickens).reduce((a,b)=>a+b,0)
+    $('#chickenCount').textContent = chickenNum
+  }
+
+  function formatNumber(n){
+    if(n>=1e9) return (n/1e9).toFixed(2)+'B'
+    if(n>=1e6) return (n/1e6).toFixed(2)+'M'
+    if(n>=1000) return (n/1000).toFixed(2)+'k'
+    return Math.floor(n)
+  }
+
+  // purchase logic
+  document.body.addEventListener('click',(e)=>{
+    const btn = e.target.closest('button.buy')
+    if(btn){
+      const id = btn.dataset.id
+      const type = btn.dataset.type
+      if(type==='upgrade') buyUpgrade(id)
+      else if(type==='shop') buyShopItem(id)
+      else if(type==='chicken') buyChicken(id)
+    }
+  })
+
+  function buyUpgrade(id){
+    const u = upgrades.find(x=>x.id===id)
+    if(!u) return
+    const owned = state.upgrades[id]||0
+    const price = Math.round(u.basePrice * Math.pow(1.15, owned))
+    if(state.eggs < price) return alert('Not enough eggs')
+    state.eggs -= price
+    state.upgrades[id] = owned + 1
+    // apply effect
+    if(u.type==='click') state.epc += u.value
+    else if(u.type==='passive') state.eps += u.value
+    else if(u.type==='multi') { state.epc *= u.value; state.eps *= u.value }
+    renderTab('upgrades')
+    updateCounters(); save()
+  }
+
+  function buyShopItem(id){
+    const s = shopItems.find(x=>x.id===id)
+    if(!s) return
+    const price = s.price
+    if(state.eggs < price) return alert('Not enough eggs')
+    state.eggs -= price
+    state.shop[id] = true
+    // if it's a theme, apply
+    if(s.effect.themeIndex!==undefined) state.bgTheme = s.effect.themeIndex
+    if(s.effect.decorIndex!==undefined) state.bgAnim = s.effect.decorIndex
+    renderTab(getActiveTab())
+    updateBG()
+    updateCounters(); save()
+  }
+
+  function buyChicken(id){
+    const c = chickens.find(x=>x.id===id)
+    const price = Math.round(200 * (c.rarity==='common'?1:c.rarity==='rare'?6:c.rarity==='epic'?30:150))
+    if(state.eggs < price) return alert('Not enough eggs')
+    state.eggs -= price
+    state.ownedChickens[id] = (state.ownedChickens[id]||0) + 1
+    // apply chicken permanent effect
+    applyChickenEffect(c)
+    renderOwnedChickens()
+    updateCounters(); save()
+  }
+
+  function applyChickenEffect(c){
+    // keep it simple: add effect to epc/eps
+    if(c.effect.epc) state.epc += c.effect.epc
+    if(c.effect.eps) state.eps += c.effect.eps
+    // other special effect: clickBonus etc
+    if(c.effect.clickBonus) state.epc += c.effect.clickBonus
+  }
+
+  function renderOwnedChickens(){
+    const out = $('#ownedChickens'); out.innerHTML=''
+    chickens.forEach(c=>{
+      const count = state.ownedChickens[c.id]||0
+      if(count>0){
+        const el = document.createElement('div'); el.className='chicken-card rarity-'+(c.rarity==='legend'?'legend':c.rarity)
+        el.innerHTML=`<div style="font-size:22px">${c.emoji}</div><div style="flex:1"><div style="font-weight:700">${c.name} x${count}</div><div style="font-size:12px;color:var(--muted)">+${c.effect.epc||0} EPC, +${c.effect.eps||0} EPS</div></div>`
+        out.appendChild(el)
+      }
+    })
+  }
+
+  function getActiveTab(){
+    return [...qs('.tab')].find(t=>t.classList.contains('active')).dataset.tab
+  }
+
+  // egg click behavior
+  const eggEl = $('#egg')
+  eggEl.addEventListener('click',(e)=>{
+    const amount = state.epc
+    state.eggs += amount
+    // small animation particles
+    spawnParticles(e.clientX, e.clientY, Math.max(3, Math.round(amount/2)))
+    updateCounters(); save()
+  })
+
+  function spawnParticles(cx, cy, count=5){
+    for(let i=0;i<count;i++){
+      const p = document.createElement('div'); p.className='particle'
+      const farm = $('#farm');
+      const rect = farm.getBoundingClientRect();
+      // place near the egg area center
+      const startX = rect.left + rect.width/2 + (Math.random()-0.5)*120
+      const startY = rect.top + rect.height/2 + (Math.random()-0.5)*40
+      p.style.left = (startX - rect.left) + 'px'
+      p.style.top = (startY - rect.top) + 'px'
+      // small rotate
+      p.style.transform = `rotate(${Math.random()*40-20}deg)`
+      farm.appendChild(p)
+      // animate falling + drift
+      const dur = 3500 + Math.random()*2500
+      const endX = (Math.random()*rect.width)
+      const endY = rect.height + 80 + Math.random()*200
+      p.animate([
+        {transform: `translate(0,0) rotate(0)`, opacity:1},
+        {transform: `translate(${endX - (startX - rect.left)}px, ${endY}px) rotate(${Math.random()*200-100}deg)`, opacity:0}
+      ],{duration:dur,easing:'cubic-bezier(.2,.9,.2,1)'}).onfinish = ()=> p.remove()
+    }
+  }
+
+  // passive tick
+  function tick(){
+    const now = Date.now(); const dt = (now - state.lastTick)/1000; state.lastTick = now
+    state.eggs += state.eps * dt
+    updateCounters()
+  }
+
+  // start ticker
+  setInterval(tick, 1000)
+
+  // autosave every 5 seconds
+  setInterval(save, 5000)
+
+  // save visual feedback
+  function flashSave(){
+    const btn = $('#saveBtn'); btn.textContent='Saved'; setTimeout(()=>btn.textContent='Save',800)
+  }
+  $('#saveBtn').addEventListener('click',save)
+  $('#resetBtn').addEventListener('click',reset)
+
+  // create dynamic background animations CSS
+  function injectBGStyles(){
+    const style = document.createElement('style')
+    let css = ''
+    for(let i=0;i<NUM_BG_ANIMS;i++){
+      const speed = 20 + (i%7)*5
+      const size = 60 + (i%10)*20
+      const name = `bgFloat${i}`
+      css += `@keyframes ${name}{0%{transform:translateY(-10%) rotate(0) scale(1)}50%{transform:translateY(20%) rotate(5deg) scale(1.05)}100%{transform:translateY(-10%) rotate(0) scale(1)}}\n`
+      css += `.bg-anim-${i}{position:absolute;inset:0;animation:${name} ${speed}s linear infinite;opacity:${0.03 + (i%5)*0.01};background: radial-gradient(circle at ${(i*23)%100}% ${(i*17)%100}%, rgba(255,255,255,0.06), transparent 20%);filter:blur(${(i%6)*4}px);pointer-events:none}\n`
+    }
+    style.innerHTML = css
+    document.head.appendChild(style)
+  }
+  injectBGStyles()
+
+  // update bg rendering based on selected theme/anim
+  function updateBG(){
+    const layer = $('#bgLayer'); layer.innerHTML=''
+    const theme = bgThemes[state.bgTheme] || bgThemes[0]
+    document.body.style.background = theme.css
+    // add selected animation layer if owned or default
+    const animIndex = state.bgAnim || 0
+    // create a few animated divs
+    for(let i=0;i<6;i++){
+      const div = document.createElement('div'); div.className = `bg-anim-${(animIndex+i)%NUM_BG_ANIMS}`
+      div.style.opacity = 0.06 + (i/20)
+      layer.appendChild(div)
+    }
+  }
+
+  // add shop items as purchasable themes (pre-owned first few for demo)
+  // mark a few free for starter
+  for(let i=0;i<4;i++) state.shop['shop'+i]=true
+
+  // load state and reapply effects
+  load()
+  // re-apply purchased upgrades to compute epc/eps
+  // reset epc/eps baseline
+  state.epc = state.epc || 1
+  state.eps = state.eps || 0
+  // if upgrades were bought in saved state, we need to recalc baseline; for simplicity we will reapply stored counts
+  // start with base
+  let baseEpc = 1, baseEps = 0
+  upgrades.forEach(u=>{
+    const count = state.upgrades[u.id]||0
+    for(let k=0;k<count;k++){
+      if(u.type==='click') baseEpc += u.value
+      else if(u.type==='passive') baseEps += u.value
+      else if(u.type==='multi'){ baseEpc *= u.value; baseEps *= u.value }
+    }
+  })
+  state.epc = (state.epc && state.epc>baseEpc) ? state.epc : baseEpc
+  state.eps = (state.eps && state.eps>baseEps) ? state.eps : baseEps
+
+  // apply chicken effects that were owned
+  for(const cid in state.ownedChickens){
+    const c = chickens.find(x=>x.id===cid)
+    if(c) applyChickenEffect(c)
+  }
+
+  renderOwnedChickens(); updateBG(); updateCounters(); renderTab(getActiveTab())
+
+  // helpful: keyboard shortcut for saving
+  window.addEventListener('keydown',(e)=>{ if((e.ctrlKey||e.metaKey) && e.key==='s'){ e.preventDefault(); save() } })
+
+  // accessibility: allow clicking egg with space when focused
+  eggEl.tabIndex=0
+  eggEl.addEventListener('keydown',(e)=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); eggEl.click() } })
+
+  // tiny onboarding: give a few eggs to start
+  if(state.eggs < 10){ state.eggs += 10 }
+  updateCounters()
+
+  </script>
+</body>
+</html>
