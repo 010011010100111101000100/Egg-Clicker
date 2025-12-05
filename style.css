@@ -1,83 +1,50 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Egg Clicker — Ultimate Farm</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="app">
-    <header class="header">
-      <div class="brand">
-        <div class="logo">EGG</div>
-        <div>
-          <h1>Egg Clicker — Ultimate Farm</h1>
-          <p class="sub">Offline earnings, inventory, animated chickens, sound & achievements</p>
-        </div>
-      </div>
-      <div class="stats">
-        <div class="stat"><div id="eggCount">0</div><div class="lbl">Eggs</div></div>
-        <div class="stat"><div id="eps">0</div><div class="lbl">EPS</div></div>
-        <div class="stat"><div id="epc">1</div><div class="lbl">EPC</div></div>
-        <div class="stat"><div id="chickCount">0</div><div class="lbl">Chickens</div></div>
-      </div>
-    </header>
+:root{
+  --bg1:#071028; --bg2:#081224;
+  --panel:rgba(255,255,255,0.03);
+  --accent:#ffd54f; --muted:#bfc7d6;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#eef2ff;min-height:100vh}
+.app{max-width:1200px;margin:12px auto;padding:12px}
+.header{display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(90deg,#fff6e0,#ffd54f);display:flex;align-items:center;justify-content:center;color:#2b2b2b;font-weight:800}
+.sub{margin:0;color:var(--muted);font-size:13px}
+.stats{display:flex;gap:10px}
+.stat{background:var(--panel);padding:8px 12px;border-radius:10px;text-align:center;min-width:96px}
+.stat .lbl{font-size:12px;color:var(--muted)}
+.main{display:grid;grid-template-columns:1fr 380px;gap:12px;margin-top:12px}
+.farm{position:relative;border-radius:12px;overflow:hidden;min-height:620px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px}
+.bg-canvas{position:absolute;inset:0;z-index:0;pointer-events:none}
+.content{position:relative;z-index:3;display:flex;align-items:center;justify-content:center;height:100%}
+.egg-wrap{text-align:center}
+.egg{width:260px;height:320px;border-radius:52% 52% 48% 48%/60% 60% 40% 40%;display:grid;place-items:center;cursor:pointer;box-shadow:0 18px 40px rgba(0,0,0,0.6);transition:transform .12s cubic-bezier(.2,.9,.2,1)}
+.egg:active{transform:scale(.96)}
+.egg-svg{width:84%;height:84%}
+.hint{color:var(--muted);font-size:13px}
+.panel{background:var(--panel);padding:12px;border-radius:10px}
+.tabs{display:flex;gap:6px;margin-bottom:8px}
+.tab{padding:8px 10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+.tab.active{background:linear-gradient(90deg,#2b2b2b,#313131)}
+.tab-content{max-height:520px;overflow:auto}
+.grid{display:grid;gap:8px}
+.item{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;display:flex;justify-content:space-between;align-items:center}
+.buy{background:linear-gradient(90deg,var(--accent),#ffb84d);border:none;padding:8px 10px;border-radius:8px;cursor:pointer;color:#111}
+.buy[disabled]{opacity:.6;cursor:not-allowed}
+.panel-actions{display:flex;gap:8px;justify-content:space-between;margin-top:10px}
+.small{padding:6px 8px;border-radius:8px;border:none;background:rgba(255,255,255,0.02);cursor:pointer}
+.footer{margin-top:12px;color:var(--muted);text-align:center}
+.owned-chickens{display:flex;flex-wrap:wrap;gap:8px}
+.owned-chick{background:rgba(255,255,255,0.02);padding:6px;border-radius:8px;display:flex;align-items:center;gap:8px}
+.rarity-common{border-left:4px solid #9e9e9e}
+.rarity-rare{border-left:4px solid #42a5f5;color:#42a5f5}
+.rarity-epic{border-left:4px solid #ab47bc;color:#ab47bc}
+.rarity-legend{border-left:4px solid #ffd54f;color:#ffd54f}
+.rarity-rainbow{background-clip:text;-webkit-background-clip:text;color:transparent;animation:rainbow 3s linear infinite}
+@keyframes rainbow{0%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(180deg)}100%{filter:hue-rotate(360deg)}}
 
-    <main class="main">
-      <section class="farm" id="farm">
-        <canvas id="bgCanvas" class="bg-canvas"></canvas>
-
-        <div class="content">
-          <div class="egg-wrap">
-            <div id="egg" class="egg" role="button" tabindex="0" aria-label="Click the egg">
-              <!-- simple SVG egg -->
-              <svg viewBox="0 0 200 240" class="egg-svg" aria-hidden="true">
-                <defs>
-                  <linearGradient id="egGrad" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0" stop-color="#fffef0"/>
-                    <stop offset="1" stop-color="#fff1bf"/>
-                  </linearGradient>
-                  <radialGradient id="egShine" cx="30%" cy="20%" r="60%">
-                    <stop offset="0" stop-color="#fff" stop-opacity="0.95"/>
-                    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-                  </radialGradient>
-                </defs>
-                <ellipse cx="100" cy="120" rx="80" ry="100" fill="url(#egGrad)"/>
-                <ellipse cx="72" cy="70" rx="38" ry="18" fill="url(#egShine)" opacity="0.95"/>
-                <g id="crack" opacity="0">
-                  <path d="M60 110 L80 115 L70 125 L90 130 L80 145 L100 140" stroke="#eedb9a" stroke-width="2" fill="none"/>
-                </g>
-              </svg>
-            </div>
-            <p class="hint">Click the egg to collect eggs — buy upgrades, collect chickens, customize themes.</p>
-          </div>
-        </div>
-      </section>
-
-      <aside class="panel">
-        <nav class="tabs" id="tabs">
-          <button class="tab active" data-tab="upgrades">Upgrades</button>
-          <button class="tab" data-tab="shop">Shop</button>
-          <button class="tab" data-tab="chickens">Chickens</button>
-          <button class="tab" data-tab="inventory">Inventory</button>
-          <button class="tab" data-tab="achievements">Achievements</button>
-        </nav>
-
-        <div id="tabContent" class="tab-content"></div>
-
-        <div class="panel-actions">
-          <button id="saveBtn" class="small">Save</button>
-          <button id="resetBtn" class="small">Reset</button>
-        </div>
-      </aside>
-    </main>
-
-    <footer class="footer">Local save (localStorage). Press Ctrl/Cmd+S to save.</footer>
-  </div>
-
-  <div id="modalRoot" aria-hidden="false"></div>
-
-  <script src="app.js" defer></script>
-</body>
-</html>
+/* particles */
+.particle{position:absolute;width:22px;height:28px;border-radius:50%;background:linear-gradient(#fff6e0,#fff1c0);pointer-events:none}
+.spark{position:absolute;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle,#fff9d6,#ffd54f);pointer-events:none}
+.toast{position:fixed;right:18px;bottom:18px;background:rgba(0,0,0,0.6);padding:10px 12px;border-radius:8px;color:#fff;z-index:9999}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#071022;padding:16px;border-radius:10px;z-index:10000}
