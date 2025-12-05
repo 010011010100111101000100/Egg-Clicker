@@ -1,296 +1,83 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Egg Clicker — All-in-One</title>
-<style>
-:root{--bg1:#0b1020;--bg2:#081224;--panel:rgba(255,255,255,0.03);--accent:#ffd54f;--muted:#bfc7d6}
-*{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;margin:0}
-body{min-height:100vh;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#eef2ff;padding:14px;display:flex;justify-content:center}
-.app{width:100%;max-width:1200px}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.brand{display:flex;gap:10px;align-items:center}
-.logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(90deg,#fff6e0,#ffd54f);display:grid;place-items:center;color:#2b2b2b;font-weight:800}
-.hstats{display:flex;gap:10px}
-.stat{background:var(--panel);padding:10px 12px;border-radius:10px;min-width:110px;text-align:center}
-.stat .num{font-weight:800}
-.main{display:grid;grid-template-columns:1fr 380px;gap:12px}
-.farm{background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:12px;min-height:640px;position:relative;overflow:hidden}
-.canvas-bg{position:absolute;inset:0;z-index:0}
-.content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%}
-.egg-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
-.egg{width:260px;height:320px;border-radius:52% 52% 48% 48%/60% 60% 40% 40%;background:linear-gradient(180deg,#fff8dc,#fff4bf);display:grid;place-items:center;box-shadow:0 14px 40px rgba(0,0,0,0.6);cursor:pointer;transition:transform .08s cubic-bezier(.2,.9,.2,1)}
-.egg:active{transform:scale(.96)}
-.egg svg{width:82%;height:82%}
-.particle{position:absolute;width:22px;height:28px;border-radius:50%;background:linear-gradient(#fff6e0,#fff1c0);pointer-events:none}
-.spark{position:absolute;width:8px;height:8px;border-radius:50%;background:radial-gradient(circle,#fff9d6,#ffd54f);pointer-events:none}
-.panel{background:var(--panel);padding:12px;border-radius:10px;height:100%;overflow:auto}
-.tabs{display:flex;gap:6px;margin-bottom:8px}
-.tab{padding:8px 10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
-.tab.active{background:linear-gradient(90deg,#2b2b2b,#313131)}
-.grid{display:grid;gap:8px}
-.item{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;display:flex;justify-content:space-between;align-items:center}
-.buy{background:linear-gradient(90deg,var(--accent),#ffb84d);border:none;padding:8px 10px;border-radius:8px;cursor:pointer}
-.buy:disabled{opacity:.5}
-.owned-chickens{display:flex;flex-wrap:wrap;gap:8px}
-.owned-chick{background:rgba(255,255,255,0.02);padding:6px;border-radius:8px;display:flex;align-items:center;gap:8px}
-.rarity-common{border-left:4px solid #9e9e9e}
-.rarity-rare{border-left:4px solid #42a5f5;color:#42a5f5}
-.rarity-epic{border-left:4px solid #ab47bc;color:#ab47bc}
-.rarity-legend{border-left:4px solid #ffd54f;color:#ffd54f}
-.rarity-rainbow{background-clip:text;-webkit-background-clip:text;color:transparent;animation:rainbow 3s linear infinite}
-@keyframes rainbow{0%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(180deg)}100%{filter:hue-rotate(360deg)}}
-.toast{position:fixed;right:18px;bottom:18px;background:rgba(0,0,0,0.6);padding:10px 12px;border-radius:8px;color:#fff;z-index:9999}
-.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#071022;padding:16px;border-radius:10px;z-index:10000}
-.footer{margin-top:12px;color:var(--muted);font-size:13px;text-align:center}
-@media(max-width:980px){.main{grid-template-columns:1fr}.panel{height:300px}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Egg Clicker — Ultimate Farm</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="app">
-  <div class="header">
-    <div class="brand"><div class="logo">EGG</div><div><div style="font-weight:800">Egg Clicker — Ultimate</div><div style="font-size:12px;color:var(--muted)">Now with offline, inventory, sounds & achievements</div></div></div>
-    <div class="hstats">
-      <div class="stat"><div class="num" id="eggCount">0</div><div style="font-size:12px;color:var(--muted)">Eggs</div></div>
-      <div class="stat"><div class="num" id="eps">0</div><div style="font-size:12px;color:var(--muted)">EPS</div></div>
-      <div class="stat"><div class="num" id="epc">1</div><div style="font-size:12px;color:var(--muted)">EPC</div></div>
-      <div class="stat"><div class="num" id="chickCount">0</div><div style="font-size:12px;color:var(--muted)">Chickens</div></div>
-    </div>
-  </div>
-
-  <div class="main">
-    <div class="farm">
-      <canvas class="canvas-bg" id="bgCanvas"></canvas>
-      <div class="content">
-        <div class="egg-wrap">
-          <div class="egg" id="egg" tabindex="0" aria-label="Click egg">
-            <!-- SVG Egg -->
-            <svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g1"><stop offset="0" stop-color="#fffef0"/><stop offset="1" stop-color="#fff1bf"/></linearGradient><radialGradient id="g2" cx="30%" cy="20%" r="60%"><stop offset="0" stop-color="#fff" stop-opacity="0.95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><ellipse cx="100" cy="120" rx="80" ry="100" fill="url(#g1)"/><ellipse cx="72" cy="70" rx="38" ry="18" fill="url(#g2)" opacity="0.95"/></svg>
-          </div>
-          <div style="color:var(--muted);font-size:13px">Click the egg to get eggs. Buy upgrades, collect chickens, and customize themes.</div>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">EGG</div>
+        <div>
+          <h1>Egg Clicker — Ultimate Farm</h1>
+          <p class="sub">Offline earnings, inventory, animated chickens, sound & achievements</p>
         </div>
       </div>
-    </div>
-
-    <div class="panel">
-      <div class="tabs">
-        <button class="tab active" data-tab="upgrades">Upgrades</button>
-        <button class="tab" data-tab="shop">Shop</button>
-        <button class="tab" data-tab="chickens">Chickens</button>
-        <button class="tab" data-tab="inventory">Inventory</button>
-        <button class="tab" data-tab="achievements">Achievements</button>
+      <div class="stats">
+        <div class="stat"><div id="eggCount">0</div><div class="lbl">Eggs</div></div>
+        <div class="stat"><div id="eps">0</div><div class="lbl">EPS</div></div>
+        <div class="stat"><div id="epc">1</div><div class="lbl">EPC</div></div>
+        <div class="stat"><div id="chickCount">0</div><div class="lbl">Chickens</div></div>
       </div>
-      <div id="tabContent"></div>
-      <div style="margin-top:10px;display:flex;gap:8px;justify-content:space-between"><button id="saveBtn" class="tab">Save</button><button id="resetBtn" class="tab">Reset</button></div>
-    </div>
+    </header>
+
+    <main class="main">
+      <section class="farm" id="farm">
+        <canvas id="bgCanvas" class="bg-canvas"></canvas>
+
+        <div class="content">
+          <div class="egg-wrap">
+            <div id="egg" class="egg" role="button" tabindex="0" aria-label="Click the egg">
+              <!-- simple SVG egg -->
+              <svg viewBox="0 0 200 240" class="egg-svg" aria-hidden="true">
+                <defs>
+                  <linearGradient id="egGrad" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0" stop-color="#fffef0"/>
+                    <stop offset="1" stop-color="#fff1bf"/>
+                  </linearGradient>
+                  <radialGradient id="egShine" cx="30%" cy="20%" r="60%">
+                    <stop offset="0" stop-color="#fff" stop-opacity="0.95"/>
+                    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+                  </radialGradient>
+                </defs>
+                <ellipse cx="100" cy="120" rx="80" ry="100" fill="url(#egGrad)"/>
+                <ellipse cx="72" cy="70" rx="38" ry="18" fill="url(#egShine)" opacity="0.95"/>
+                <g id="crack" opacity="0">
+                  <path d="M60 110 L80 115 L70 125 L90 130 L80 145 L100 140" stroke="#eedb9a" stroke-width="2" fill="none"/>
+                </g>
+              </svg>
+            </div>
+            <p class="hint">Click the egg to collect eggs — buy upgrades, collect chickens, customize themes.</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <nav class="tabs" id="tabs">
+          <button class="tab active" data-tab="upgrades">Upgrades</button>
+          <button class="tab" data-tab="shop">Shop</button>
+          <button class="tab" data-tab="chickens">Chickens</button>
+          <button class="tab" data-tab="inventory">Inventory</button>
+          <button class="tab" data-tab="achievements">Achievements</button>
+        </nav>
+
+        <div id="tabContent" class="tab-content"></div>
+
+        <div class="panel-actions">
+          <button id="saveBtn" class="small">Save</button>
+          <button id="resetBtn" class="small">Reset</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="footer">Local save (localStorage). Press Ctrl/Cmd+S to save.</footer>
   </div>
 
-  <div class="footer">Local save (localStorage). Press Ctrl/Cmd+S to save.</div>
-</div>
+  <div id="modalRoot" aria-hidden="false"></div>
 
-<div id="modalRoot"></div>
-
-<script>
-// Egg Clicker — Full feature integration
-const STATE_KEY = 'egg_clicker_complete_v1'
-const NUM_UPGRADES = 60
-const NUM_SHOP = 60
-
-// state
-let state = {
-  eggs: 0,
-  epc: 1,
-  eps: 0,
-  upgrades: {},
-  shop: {},
-  ownedChickens: {},
-  inventoryThemes: [],
-  equippedTheme: null,
-  achievements: {},
-  lastTick: Date.now()
-}
-
-// helpers
-const $ = s => document.querySelector(s)
-const qs = s => document.querySelectorAll(s)
-function fmt(n){ if(n>=1e9) return (n/1e9).toFixed(2)+'B'; if(n>=1e6) return (n/1e6).toFixed(2)+'M'; if(n>=1000) return (n/1000).toFixed(2)+'k'; return Math.floor(n) }
-function f2(n){ if(n<10) return n.toFixed(2); return fmt(n) }
-
-// generate unique names
-const ADJ=['Golden','Mossy','Shimmer','Lunar','Cosmic','Silent','Breezy','Velvet','Neon','Crystal','Aurora','Twilight','Solar','Nimbus','Echo','Radiant','Verdant','Opal','Coral','Ivory']
-const NOUN=['Meadow','Dawn','Synth','Haven','Vista','Grove','Skyscape','Portal','Cascade','Plume','Arcade','Harbor','Isle','Prairie','Field']
-function uniqueName(prefix,i){ return `${ADJ[i % ADJ.length]} ${NOUN[i % NOUN.length]} ${prefix}` }
-
-// upgrades
-const upgrades = Array.from({length:NUM_UPGRADES}).map((_,i)=>{
-  const kinds=['click','passive','multi']
-  const type=kinds[i%kinds.length]
-  const base= Math.round(10 * Math.pow(1.5, i%12) * (1+Math.floor(i/12)))
-  const value= type==='click' ? Math.max(1,Math.round(Math.pow(1.4,i%10))) : type==='passive' ? Math.max(0.2,Math.round(10*Math.pow(1.18,i%10))/10) : (1.1 + (i%5)*0.15)
-  return {id:'u'+i,name:uniqueName('Upgrade',i+1),desc: type==='click'? `+${value} EPC` : type==='passive'? `+${value} EPS` : `x${value.toFixed(2)} multiplier`,type,basePrice:base,value}
-})
-upgrades.forEach(u=>state.upgrades[u.id]=0)
-
-// shop items (themes & decor)
-const shopItems = Array.from({length:NUM_SHOP}).map((_,i)=>{ const type = i<40? 'theme':'decor'; return {id:'s'+i,name: uniqueName(type.charAt(0).toUpperCase()+type.slice(1), i),price: Math.round(80*Math.pow(1.18,i)),type,effect:{index:i}} })
-shopItems.forEach(s=>state.shop[s.id]=false)
-
-// themes
-const bgThemes = Array.from({length:40}).map((_,i)=>{ const h1=(i*31)%360,h2=(i*73+40)%360; return {id:i,css:`linear-gradient(135deg,hsl(${h1} 60% 55%), hsl(${h2} 65% 48%))`} })
-
-// chickens
-const chickenPool = [
-  {id:'c1',name:'Clucky',emoji:'🐔',rarity:'common',effect:{epc:0.2}},
-  {id:'c2',name:'Peep',emoji:'🐣',rarity:'common',effect:{eps:0.2}},
-  {id:'c3',name:'Sunny',emoji:'🐥',rarity:'rare',effect:{epc:1}},
-  {id:'c4',name:'Bolt',emoji:'⚡️',rarity:'rare',effect:{eps:1}},
-  {id:'c5',name:'Aurora',emoji:'🪶',rarity:'epic',effect:{epc:3,eps:0.5}},
-  {id:'c6',name:'Goldcrest',emoji:'🥇',rarity:'legend',effect:{epc:10}},
-  {id:'c7',name:'Nimbus',emoji:'☁️',rarity:'epic',effect:{eps:3}},
-  {id:'c8',name:'Echo',emoji:'🔔',rarity:'rare',effect:{clickBonus:2}},
-  {id:'c9',name:'Sable',emoji:'🖤',rarity:'common',effect:{epc:0.5}},
-  {id:'c10',name:'Comet',emoji:'☄️',rarity:'legend',effect:{eps:10,epc:5}},
-  {id:'c11',name:'Twinkle',emoji:'✨',rarity:'epic',effect:{eps:2,epc:2}},
-  {id:'c12',name:'Voyager',emoji:'🚀',rarity:'rare',effect:{eps:3,epc:1}}
-]
-chickenPool.forEach(c=>state.ownedChickens[c.id]=0)
-
-// achievements
-const achievements = [
-  {id:'a1',name:'First Crack',desc:'Earn 100 eggs'},
-  {id:'a2',name:'Hatchling',desc:'Buy 1 chicken'},
-  {id:'a3',name:'Collector',desc:'Own 5 chickens'},
-  {id:'a4',name:'Upgrader',desc:'Buy 10 upgrades'},
-  {id:'a5',name:'Idle Farmer',desc:'Gain 1,000 eggs while offline'},
-  {id:'a6',name:'Legend Hunter',desc:'Obtain a legendary chicken'},
-  {id:'a7',name:'Theme Hoarder',desc:'Own 10 themes'},
-  {id:'a8',name:'Million Egg',desc:'Earn 1,000,000 eggs'},
-]
-achievements.forEach(a=>state.achievements[a.id]=false)
-
-// load/save
-function save(){ state.lastTick = Date.now(); localStorage.setItem(STATE_KEY, JSON.stringify(state)); flashSave() }
-function load(){ const raw = localStorage.getItem(STATE_KEY); if(raw){ try{ const parsed = JSON.parse(raw); Object.assign(state, parsed); // ensure keys exist
-      upgrades.forEach(u=>{ if(state.upgrades[u.id]===undefined) state.upgrades[u.id]=0 })
-      shopItems.forEach(s=>{ if(state.shop[s.id]===undefined) state.shop[s.id]=false })
-      chickenPool.forEach(c=>{ if(state.ownedChickens[c.id]===undefined) state.ownedChickens[c.id]=0 })
-      if(!state.inventoryThemes) state.inventoryThemes = []
-    }catch(e){console.warn('load err',e)} } }
-function reset(){ if(confirm('Reset all progress?')){ localStorage.removeItem(STATE_KEY); location.reload() } }
-
-function flashSave(){ const btn = $('#saveBtn'); if(btn){ const prev = btn.textContent; btn.textContent='Saved'; setTimeout(()=>btn.textContent=prev,800) } }
-
-// offline earnings
-function handleOfflineEarnings(){ const now = Date.now(); const last = state.lastTick || now; const secs = Math.floor((now - last)/1000); if(secs <= 0) return; const earned = state.eps * secs; if(earned>0.001){ state.eggs += earned; showModal(`<div style="font-weight:700">Welcome back!</div><div style="margin-top:8px">You were away for <strong>${secs}s</strong> and earned <strong>${f2(earned)}</strong> eggs while offline.</div><div style="margin-top:10px"><button id='closeModal' class='tab'>Close</button></div>`); $('#modalRoot').addEventListener('click', (ev)=>{ if(ev.target && ev.target.id==='closeModal') $('#modalRoot').innerHTML='' }) } }
-
-// reapply effects from saved state
-function recalcFromState(){ state.epc = 1; state.eps = 0; for(const id in state.upgrades){ const count = state.upgrades[id]||0; const u = upgrades.find(x=>x.id===id); if(u){ for(let k=0;k<count;k++) applyUpgrade(u) } } for(const cid in state.ownedChickens){ const c = chickenPool.find(x=>x.id===cid); const count = state.ownedChickens[cid]||0; for(let k=0;k<count;k++) applyChickenEffect(c) } }
-
-// buy logic
-function priceForUpgrade(id){ const u = upgrades.find(x=>x.id===id); const owned = state.upgrades[id]||0; return Math.round(u.basePrice * Math.pow(1.12, owned)) }
-function buyUpgrade(id){ const u = upgrades.find(x=>x.id===id); if(!u) return; const price = priceForUpgrade(id); if(state.eggs < price) return showToast('Not enough eggs'); state.eggs -= price; state.upgrades[id] = (state.upgrades[id]||0)+1; applyUpgrade(u); showToast(`Bought ${u.name}`); playPurchase(); renderAll(); save(); checkAchievements() }
-function buyShop(id){ const s = shopItems.find(x=>x.id===id); if(!s) return; if(state.shop[id]) return showToast('Already owned'); if(state.eggs < s.price) return showToast('Not enough eggs'); state.eggs -= s.price; state.shop[id] = true; if(s.type==='theme'){ state.inventoryThemes.push(s.effect.index); if(state.equippedTheme===null) state.equippedTheme = s.effect.index; applyTheme(state.equippedTheme) } showToast(`Purchased ${s.name}`); playPurchase(); renderAll(); save(); checkAchievements() }
-function buyChicken(id){ const c = chickenPool.find(x=>x.id===id); if(!c) return; const price = Math.round(180 * (c.rarity==='common'?1:c.rarity==='rare'?6:c.rarity==='epic'?30:150)); if(state.eggs < price) return showToast('Not enough eggs'); state.eggs -= price; state.ownedChickens[id] = (state.ownedChickens[id]||0)+1; applyChickenEffect(c); showToast(`You got ${c.name}!`); spawnConfetti(); playPurchase(); renderAll(); save(); checkAchievements() }
-
-function applyUpgrade(u){ if(u.type==='click') state.epc += u.value; else if(u.type==='passive') state.eps += u.value; else if(u.type==='multi'){ state.epc *= u.value; state.eps *= u.value } }
-function applyChickenEffect(c){ if(c.effect.epc) state.epc += c.effect.epc; if(c.effect.eps) state.eps += c.effect.eps; if(c.effect.clickBonus) state.epc += c.effect.clickBonus }
-
-// equip theme
-function applyTheme(index){ if(index===null) return; const t = bgThemes[index] || bgThemes[0]; document.body.style.background = t.css; state.equippedTheme = index; save(); }
-function equipFromInventory(index){ if(state.inventoryThemes.includes(index)) applyTheme(index); renderTab('inventory'); }
-
-// UI render
-function renderTab(tab='upgrades'){ const c = $('#tabContent'); c.innerHTML=''; if(tab==='upgrades'){ const wrapper = document.createElement('div'); wrapper.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Upgrades</strong><small style='color:var(--muted)'>Owned ${countOwnedUpgrades()}</small></div>`; const grid = document.createElement('div'); grid.className='grid'; upgrades.forEach(u=>{ const owned = state.upgrades[u.id]||0; const price = priceForUpgrade(u.id); const el = document.createElement('div'); el.className='item'; el.innerHTML = `<div style='flex:1'><div style='font-weight:700'>${u.name} ${owned?`(x${owned})`:''}</div><div style='font-size:12px;color:var(--muted)'>${u.desc}</div></div><div style='text-align:right'><div style='font-weight:800'>${fmt(price)}</div><button class='buy' data-type='upgrade' data-id='${u.id}'>Buy</button></div>`; grid.appendChild(el) }); wrapper.appendChild(grid); c.appendChild(wrapper) }
-else if(tab==='shop'){ const wrapper = document.createElement('div'); wrapper.innerHTML=`<div style='font-weight:700;margin-bottom:8px'>Shop</div>`; const grid = document.createElement('div'); grid.className='grid'; shopItems.forEach(s=>{ const owned = state.shop[s.id]; const el = document.createElement('div'); el.className='item'; el.innerHTML=`<div style='flex:1'><div style='font-weight:700'>${s.name}</div><div style='font-size:12px;color:var(--muted)'>${s.type}</div></div><div style='text-align:right'><div style='font-weight:800'>${fmt(s.price)}</div><button class='buy' data-type='shop' data-id='${s.id' } ${owned? 'disabled':''}>${owned? 'Owned':'Buy'}</button></div>`; // corrected below
-    // we can't directly use template with bracket inside, so rebuild
-  });
-  // rebuild properly
-  grid.innerHTML = '';
-  shopItems.forEach(s=>{
-    const owned = state.shop[s.id];
-    const btn = owned? `<button class='buy' disabled>Owned</button>` : `<button class='buy' data-type='shop' data-id='${s.id}'>Buy</button>`;
-    const el = document.createElement('div'); el.className='item'; el.innerHTML = `<div style='flex:1'><div style='font-weight:700'>${s.name}</div><div style='font-size:12px;color:var(--muted)'>${s.type}</div></div><div style='text-align:right'><div style='font-weight:800'>${fmt(s.price)}</div>${btn}</div>`; grid.appendChild(el);
-  });
-  wrapper.appendChild(grid); c.appendChild(wrapper);
-}
-else if(tab==='chickens'){ const wrapper = document.createElement('div'); wrapper.innerHTML=`<div style='font-weight:700;margin-bottom:8px'>Chickens</div>`; const grid = document.createElement('div'); grid.className='grid'; chickenPool.forEach(cn=>{ const owned = state.ownedChickens[cn.id]||0; const price = Math.round(180 * (cn.rarity==='common'?1:cn.rarity==='rare'?6:cn.rarity==='epic'?30:150)); const rarityClass = cn.rarity==='legend' ? 'rarity-rainbow' : 'rarity-'+cn.rarity; const el = document.createElement('div'); el.className='item '+rarityClass; el.innerHTML = `<div style='display:flex;gap:10px;align-items:center'><div style='font-size:22px'>${cn.emoji}</div><div><div style='font-weight:700'>${cn.name}</div><div style='font-size:12px;color:var(--muted)'>Rarity: ${cn.rarity}</div></div></div><div style='text-align:right'><div style='font-weight:800'>${fmt(price)}</div><button class='buy' data-type='chicken' data-id='${cn.id}'>${owned? 'Owned':'Buy'}</button></div>`; grid.appendChild(el) }); wrapper.appendChild(grid); c.appendChild(wrapper) }
-else if(tab==='inventory'){ const wrapper = document.createElement('div'); wrapper.innerHTML=`<div style='font-weight:700;margin-bottom:8px'>Inventory - Themes</div>`; const grid = document.createElement('div'); grid.className='grid'; if(state.inventoryThemes.length===0){ grid.innerHTML = '<div style="color:var(--muted)">No themes owned. Buy them in the Shop.</div>' } else { state.inventoryThemes.forEach(idx=>{ const theme = bgThemes[idx]; const active = state.equippedTheme===idx; const btn = active? `<button class='tab' disabled>Equipped</button>` : `<button class='tab' data-equip='${idx}'>Equip</button>`; const el = document.createElement('div'); el.className='item'; el.innerHTML = `<div style='display:flex;gap:10px;align-items:center'><div style='width:56px;height:36px;border-radius:6px;background:${theme.css}'></div><div style='flex:1'><div style='font-weight:700'>Theme ${idx+1}</div><div style='font-size:12px;color:var(--muted)'>${active? 'Equipped':'Owned'}</div></div></div><div style='text-align:right'>${btn}</div>`; grid.appendChild(el) }) } wrapper.appendChild(grid); c.appendChild(wrapper) }
-else if(tab==='achievements'){ const wrapper = document.createElement('div'); wrapper.innerHTML=`<div style='font-weight:700;margin-bottom:8px'>Achievements</div>`; const grid = document.createElement('div'); grid.className='grid'; achievements.forEach(a=>{ const unlocked = !!state.achievements[a.id]; const el = document.createElement('div'); el.className='item'; el.innerHTML = `<div style='flex:1'><div style='font-weight:700'>${a.name} ${unlocked?'<small style="color:var(--muted)"> — Unlocked</small>':''}</div><div style='font-size:12px;color:var(--muted)'>${a.desc}</div></div><div style='text-align:right'>${unlocked? '<div style="color:var(--accent);font-weight:800">✓</div>' : '<div style="color:var(--muted)">Locked</div>'}</div>`; grid.appendChild(el) }); wrapper.appendChild(grid); c.appendChild(wrapper) }
-}
-
-function countOwnedUpgrades(){ return Object.values(state.upgrades).reduce((a,b)=>a+b,0) }
-
-// delegation
-document.body.addEventListener('click', (e)=>{
-  const btn = e.target.closest('button.buy')
-  if(btn){ const type = btn.dataset.type; const id = btn.dataset.id; if(type==='upgrade') buyUpgrade(id); else if(type==='shop') buyShop(id); else if(type==='chicken') buyChicken(id); return }
-  const equipBtn = e.target.closest('[data-equip]'); if(equipBtn){ const idx = Number(equipBtn.dataset.equip); equipFromInventory(idx); return }
-  const tabBtn = e.target.closest('.tab'); if(tabBtn && tabBtn.dataset.tab){ qs('.tab').forEach(x=>x.classList.remove('active')); tabBtn.classList.add('active'); renderTab(tabBtn.dataset.tab); return }
-})
-
-// egg interactions
-const eggEl = $('#egg'); eggEl.addEventListener('click',(e)=>{ clickEgg(e.clientX,e.clientY) }); eggEl.addEventListener('keydown',(e)=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); clickEgg(window.innerWidth/2, window.innerHeight/2) } })
-function clickEgg(cx,cy){ const amt = state.epc; state.eggs += amt; spawnParticles(cx,cy, Math.max(4,Math.round(amt/2))); showFloat(`+${f2(amt)}`); renderAll(); save(); playClick(); checkAchievements(); }
-
-// particles
-const farm = document.querySelector('.farm')
-function spawnParticles(cx,cy,count=5){ for(let i=0;i<count;i++){ const p = document.createElement('div'); p.className = Math.random()>0.6? 'particle':'spark'; farm.appendChild(p); const rect = farm.getBoundingClientRect(); const sx = rect.left + rect.width/2 + (Math.random()-0.5)*140; const sy = rect.top + rect.height/2 + (Math.random()-0.5)*80; p.style.left = (sx-rect.left)+'px'; p.style.top = (sy-rect.top)+'px'; const dur = 1200 + Math.random()*2400; const endX = Math.random()*rect.width; const endY = rect.height + 80 + Math.random()*200; p.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${endX-(sx-rect.left)}px,${endY}px) scale(.8)`,opacity:0}],{duration:dur,easing:'cubic-bezier(.2,.9,.2,1)'}).onfinish = ()=> p.remove() } }
-
-// confetti
-function spawnConfetti(){ for(let i=0;i<24;i++){ const p = document.createElement('div'); p.style.position='absolute'; p.style.left = (50 + (Math.random()-0.5)*40)+'%'; p.style.top = '20%'; p.style.width='8px'; p.style.height='12px'; p.style.background = ['#ffd54f','#ffb74d','#ff8a65','#81c784'][Math.floor(Math.random()*4)]; p.style.transform = 'rotate('+Math.random()*360+'deg)'; p.style.zIndex=9999; document.body.appendChild(p); p.animate([{transform:'translateY(0) rotate(0)',opacity:1},{transform:`translateY(${400+Math.random()*200}px) rotate(${Math.random()*720-360}deg)`,opacity:0}],{duration:1200+Math.random()*800}).onfinish = ()=>p.remove() } }
-
-// floating text
-function showFloat(txt){ const d = document.createElement('div'); d.textContent = txt; d.style.position='absolute'; d.style.left='50%'; d.style.top='35%'; d.style.transform='translateX(-50%)'; d.style.fontWeight='800'; d.style.color='var(--accent)'; d.style.zIndex=5; farm.appendChild(d); d.animate([{opacity:1,transform:'translateX(-50%) translateY(0)'},{opacity:0,transform:'translateX(-50%) translateY(-80px)'}],{duration:1100}).onfinish=()=>d.remove() }
-
-// achievements
-function checkAchievements(){ if(state.eggs>=100 && !state.achievements['a1']) unlock('a1'); if(Object.values(state.ownedChickens).reduce((a,b)=>a+b,0)>=1 && !state.achievements['a2']) unlock('a2'); if(Object.values(state.ownedChickens).reduce((a,b)=>a+b,0)>=5 && !state.achievements['a3']) unlock('a3'); if(countOwnedUpgrades()>=10 && !state.achievements['a4']) unlock('a4'); if(state.eggs>=1e6 && !state.achievements['a8']) unlock('a8'); }
-function unlock(id){ state.achievements[id]=true; const a = achievements.find(x=>x.id===id); showToast('Achievement: '+a.name); save(); renderTab(getActiveTab()) }
-
-// sounds (WebAudio)
-const audioCtx = new (window.AudioContext||window.webkitAudioContext)()
-function playClick(){ try{ const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.value = 500 + Math.random()*300; g.gain.value = 0.06; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.06) }catch(e){} }
-function playPurchase(){ try{ const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='triangle'; o.frequency.value=400; g.gain.value=0.04; o.connect(g); g.connect(audioCtx.destination); o.start(); o.frequency.exponentialRampToValueAtTime(900,audioCtx.currentTime+0.12); o.stop(audioCtx.currentTime+0.14) }catch(e){} }
-
-// confetti & visual
-function playBig(){ spawnConfetti(); }
-
-// background canvas
-const canvas = $('#bgCanvas'); const ctx = canvas.getContext('2d'); let orbs=[];
-function resize(){ canvas.width = document.querySelector('.farm').clientWidth; canvas.height = document.querySelector('.farm').clientHeight }
-window.addEventListener('resize', resize); resize(); function initOrbs(){ orbs=[]; for(let i=0;i<50;i++){ orbs.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,rad:10+Math.random()*80,vy:0.02+Math.random()*0.6,ax:Math.random()*0.4-0.2,alpha:0.02+Math.random()*0.06}) } }
-initOrbs(); function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); const g=ctx.createLinearGradient(0,0,0,canvas.height); g.addColorStop(0,'rgba(255,255,255,0.02)'); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height); for(const o of orbs){ o.y -= o.vy; o.x += o.ax; if(o.y < -o.rad) o.y = canvas.height + o.rad; if(o.x < -o.rad) o.x = canvas.width + o.rad; if(o.x > canvas.width + o.rad) o.x = -o.rad; const rg = ctx.createRadialGradient(o.x,o.y,o.rad*0.2,o.x,o.y,o.rad); rg.addColorStop(0,`rgba(255,235,170,${o.alpha})`); rg.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle = rg; ctx.beginPath(); ctx.arc(o.x,o.y,o.rad,0,Math.PI*2); ctx.fill() } requestAnimationFrame(draw) }
-requestAnimationFrame(draw)
-
-// tick & offline
-function tick(){ const now = Date.now(); const dt = (now - (state.lastTick||now))/1000; state.lastTick = now; state.eggs += state.eps * dt; renderCounters(); }
-setInterval(tick,1000); setInterval(save,5000)
-
-// render
-function renderCounters(){ $('#eggCount').textContent = f2(state.eggs); $('#eps').textContent = f2(state.eps); $('#epc').textContent = f2(state.epc); $('#chickCount').textContent = Object.values(state.ownedChickens).reduce((a,b)=>a+b,0) }
-function renderOwnedChickens(){ const out = document.querySelector('.owned-chickens'); if(!out) return; out.innerHTML=''; chickenPool.forEach(c=>{ const count = state.ownedChickens[c.id]||0; if(count>0){ const el = document.createElement('div'); el.className='owned-chick'; el.innerHTML = `<div style='font-size:20px'>${c.emoji}</div><div style='font-weight:700'>${c.name} x${count}</div><div style='font-size:12px;color:var(--muted)'>+${c.effect.epc||0} EPC, +${c.effect.eps||0} EPS</div>`; out.appendChild(el) } }) }
-
-function renderAll(){ renderCounters(); renderOwnedChickens(); renderTab(getActiveTab()) }
-
-// initial load
-load(); handleOfflineEarnings(); recalcFromState(); renderAll(); renderTab('upgrades')
-
-// helpers
-function getActiveTab(){ return [...qs('.tab')].find(t=>t.classList.contains('active')).dataset.tab }
-qs('.tab').forEach(t=>t.addEventListener('click',()=>{ qs('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); renderTab(t.dataset.tab) }))
-
-// UI: save/reset
-$('#saveBtn').addEventListener('click',()=>{ save(); showToast('Saved'); playPurchase() })
-$('#resetBtn').addEventListener('click',()=> reset())
-
-// modal & toast
-function showToast(msg,ms=1400){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.animate([{opacity:1,transform:'translateY(0)'},{opacity:0,transform:'translateY(24px)'}],{duration:600}).onfinish=()=>t.remove() },ms) }
-function showModal(html){ const root=$('#modalRoot'); root.innerHTML = `<div class='modal'>${html}</div>`; root.querySelector('#closeModal')?.addEventListener('click',()=> root.innerHTML='') }
-
-// check achievements on interval
-setInterval(checkAchievements,2000)
-
-// EOF
-</script>
+  <script src="app.js" defer></script>
 </body>
 </html>
