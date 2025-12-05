@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Egg Clicker — Ultimate Farm</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <div class="logo">EGG</div>
+        <div>
+          <h1>Egg Clicker — Ultimate Farm</h1>
+          <p class="sub">Offline earnings, inventory, animated chickens, sound & achievements</p>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div id="eggCount">0</div><div class="lbl">Eggs</div></div>
+        <div class="stat"><div id="eps">0</div><div class="lbl">EPS</div></div>
+        <div class="stat"><div id="epc">1</div><div class="lbl">EPC</div></div>
+        <div class="stat"><div id="chickCount">0</div><div class="lbl">Chickens</div></div>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="farm" id="farm">
+        <canvas id="bgCanvas" class="bg-canvas"></canvas>
+
+        <div class="content">
+          <div class="egg-wrap">
+            <div id="egg" class="egg" role="button" tabindex="0" aria-label="Click the egg">
+              <!-- simple SVG egg -->
+              <svg viewBox="0 0 200 240" class="egg-svg" aria-hidden="true">
+                <defs>
+                  <linearGradient id="egGrad" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0" stop-color="#fffef0"/>
+                    <stop offset="1" stop-color="#fff1bf"/>
+                  </linearGradient>
+                  <radialGradient id="egShine" cx="30%" cy="20%" r="60%">
+                    <stop offset="0" stop-color="#fff" stop-opacity="0.95"/>
+                    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+                  </radialGradient>
+                </defs>
+                <ellipse cx="100" cy="120" rx="80" ry="100" fill="url(#egGrad)"/>
+                <ellipse cx="72" cy="70" rx="38" ry="18" fill="url(#egShine)" opacity="0.95"/>
+                <g id="crack" opacity="0">
+                  <path d="M60 110 L80 115 L70 125 L90 130 L80 145 L100 140" stroke="#eedb9a" stroke-width="2" fill="none"/>
+                </g>
+              </svg>
+            </div>
+            <p class="hint">Click the egg to collect eggs — buy upgrades, collect chickens, customize themes.</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <nav class="tabs" id="tabs">
+          <button class="tab active" data-tab="upgrades">Upgrades</button>
+          <button class="tab" data-tab="shop">Shop</button>
+          <button class="tab" data-tab="chickens">Chickens</button>
+          <button class="tab" data-tab="inventory">Inventory</button>
+          <button class="tab" data-tab="achievements">Achievements</button>
+        </nav>
+
+        <div id="tabContent" class="tab-content"></div>
+
+        <div class="panel-actions">
+          <button id="saveBtn" class="small">Save</button>
+          <button id="resetBtn" class="small">Reset</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="footer">Local save (localStorage). Press Ctrl/Cmd+S to save.</footer>
+  </div>
+
+  <div id="modalRoot" aria-hidden="false"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
